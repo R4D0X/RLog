@@ -26,6 +26,7 @@ python RLog.py first.txt seacond.txt output.txt "http://example.com,http://anoth
 
 Download this file: [https://github.com/R4D0X/RLog](https://github.com/R4D0X/RLog/raw/main/Windows/RLog.rar)
 Then run `RLog.exe`
+
 ----------------------------------------------------
 #### Contact
 If you have any questions or feedback, feel free to contact me at [Telegram](https://t.me/r4d0x).
