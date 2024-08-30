@@ -62,7 +62,7 @@ def get_user_input():
         return None, None, None, None
 
     max_workers = os.cpu_count()  
-    logging.info(f"Using {max_workers} childs.")
+    logging.info(f"Using {max_workers} threads.")
 
     return input_file_paths, output_folder, [url.strip() for url in urls.split(',')], max_workers
 
