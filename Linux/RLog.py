@@ -1,3 +1,5 @@
+# Updated by @liverturk
+
 import tkinter as tk
 from tkinter import filedialog, simpledialog
 import os
@@ -75,4 +77,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-# Updated by @liverturk
