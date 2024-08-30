@@ -1,102 +1,76 @@
+import tkinter as tk
+from tkinter import filedialog, simpledialog
 import os
-
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
-import argparse
-
-
-
-def loglamayi_ayarla():
-
+def setup_logging():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
-
-def dosya_ismi_temizle(url):
-
+def sanitize_filename(url):
     for char in ['://', '/', ':', '*', '?', '"', '<', '>', '|']:
-
-        url = url.replace(char, '')
-
+        url = url.replace(char, '_')
     return url
 
-
-
-def linkleri_filtrele(girdi_dosya_yollari, cikti_dosya_yolu, url_listesi):
-
+def process_file(input_file_path, urls):
+    matching_lines = []
     try:
-
-        with open(cikti_dosya_yolu, 'w', encoding='utf-8') as cikti_dosya:
-
-            # İlk satıra "Radox" yaz ve bir boş satır ekle
-
-            cikti_dosya.write("--- Made by Radox ---\n\n")
-
-
-
-            for girdi_dosya_yolu in girdi_dosya_yollari:
-
-                girdi_dosya_ismi = os.path.basename(girdi_dosya_yolu)
-
-
-
-                try:
-
-                    with open(girdi_dosya_yolu, 'r', encoding='utf-8', errors='ignore') as girdi_dosya:
-
-                        for satir in girdi_dosya:
-
-                            if any(url in satir for url in url_listesi):
-
-                                cikti_dosya.write(f"{girdi_dosya_ismi}: {satir}")
-
-                except Exception as e:
-
-                    logging.error(f"{girdi_dosya_yolu} dosyasını okurken hata: {e}")
-
-
-
+        with open(input_file_path, 'r', encoding='utf-8', errors='ignore') as input_file:
+            for line in input_file:
+                for url in urls:
+                    if url in line:
+                        matching_lines.append(line)
+                        break
     except Exception as e:
+        logging.error(f"Error occurred: {e}")
+    return matching_lines
 
-        logging.error(f"{cikti_dosya_yolu} dosyasına yazarken hata: {e}")
+def filter_links(input_file_paths, output_file_path, urls, max_workers):
+    try:
+        with open(output_file_path, 'w', encoding='utf-8') as output_file_handle:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [executor.submit(process_file, input_file_path, urls) for input_file_path in input_file_paths]
+                for future in futures:
+                    matching_lines = future.result()
+                    if matching_lines:
+                        output_file_handle.writelines(matching_lines)
+    except Exception as e:
+        logging.error(f"Error occurred: {e}")
 
+def get_user_input():
+    root = tk.Tk()
+    root.withdraw()
 
+    input_file_paths = filedialog.askopenfilenames(
+        title="Select files",
+        filetypes=[("Text Files", "*.txt"), ("Backup Text Files", "*.txt~"), ("All Files", "*.*")]
+    )
+    if not input_file_paths:
+        logging.info("Operation canceled")
+        return None, None, None, None
+
+    output_folder = filedialog.askdirectory(title="Select the folder to save the output file")
+    if not output_folder:
+        logging.info("Canceled")
+        return None, None, None, None
+
+    urls = simpledialog.askstring("URLs", "Enter the URLs to search separated by commas:")
+    if not urls:
+        logging.info("No URLs provided canceled")
+        return None, None, None, None
+
+    max_workers = os.cpu_count()  
+    logging.info(f"Using {max_workers} childs.")
+
+    return input_file_paths, output_folder, [url.strip() for url in urls.split(',')], max_workers
 
 def main():
-
-    loglamayi_ayarla()
-
-
-
-    parser = argparse.ArgumentParser(description="Belirli URL'leri içeren satırları birleştirip tek bir çıktı dosyasına yazan program.")
-
-    parser.add_argument('girdi_dosyalari', nargs='+', help="Girdi dosya yolları")
-
-    parser.add_argument('cikti_dosya', help="Çıktı dosya yolu")
-
-    parser.add_argument('url_listesi', help="Aranacak URL'lerin virgülle ayrılmış listesi")
-
-
-
-    args = parser.parse_args()
-
-
-
-    girdi_dosya_yollari = args.girdi_dosyalari
-
-    cikti_dosya_yolu = args.cikti_dosya
-
-    url_listesi = [url.strip() for url in args.url_listesi.split(',')]
-
-
-
-    linkleri_filtrele(girdi_dosya_yollari, cikti_dosya_yolu, url_listesi)
-
-    logging.info("İşlem tamamlandı.")
-
-
+    setup_logging()
+    input_file_paths, output_folder, urls, max_workers = get_user_input()
+    if input_file_paths and output_folder and urls:
+        output_file_path = os.path.join(output_folder, "filtered_output.txt")
+        filter_links(input_file_paths, output_file_path, urls, max_workers)
+        logging.info("Operation completed.")
 
 if __name__ == "__main__":
-
     main()
-
