@@ -1,9 +1,9 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
+title: Suggestion
+labels: good first issue
+assignees: R4D0X
 
 ---
 
